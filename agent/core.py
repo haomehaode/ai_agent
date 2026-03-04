@@ -51,7 +51,7 @@ BASE_SYSTEM_PROMPT = """
 """
 
 class AgentLoop:
-    def __init__(self, tools: list[BaseTool], skills_dir: str = ".claude/skills"):
+    def __init__(self, tools: list[BaseTool], skills_dir: str = "skills"):
         self.client = OpenAI(
             api_key=config.openai_api_key,
             base_url=config.openai_base_url,

@@ -3,7 +3,7 @@ Skills 系统：参考 Claude Code / Agent Skills 标准，实现渐进式披露
 
 - 始终加载：YAML frontmatter 的 name + description，~100 tokens/skill
 - 触发时加载：SKILL.md 完整内容，通过 read_skill 工具或工具调用触发注入
-- 格式：.claude/skills/<name>/SKILL.md，遵循 agentskills.io 规范
+- 格式：skills/<name>/SKILL.md，遵循 agentskills.io 规范
 """
 import os
 from dataclasses import dataclass
@@ -22,9 +22,9 @@ class Skill:
 
 
 class SkillRegistry:
-    """扫描 .claude/skills/ 目录，加载所有 SKILL.md 文件，被动提供技能信息。"""
+    """扫描 skills/ 目录，加载所有 SKILL.md 文件，被动提供技能信息。"""
 
-    def __init__(self, skills_dir: str = ".claude/skills"):
+    def __init__(self, skills_dir: str = "skills"):
         self.skills_dir = os.path.abspath(skills_dir)
         # Ensure the directory exists
         os.makedirs(self.skills_dir, exist_ok=True)

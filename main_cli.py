@@ -13,7 +13,7 @@ from tools.code_search import SearchFilesTool
 from tools.skill_ops import ReadSkillTool
 
 
-def build_agent(skills_dir: str = ".claude/skills") -> AgentLoop:
+def build_agent(skills_dir: str = "skills") -> AgentLoop:
     sanitizer = PathSanitizer(config.allowed_path_list)
     cmd_filter = CommandFilter()
     tools = [
@@ -27,12 +27,12 @@ def build_agent(skills_dir: str = ".claude/skills") -> AgentLoop:
     return AgentLoop(tools, skills_dir=skills_dir)
 
 
-def run_single(task: str, skills_dir: str = ".claude/skills") -> None:
+def run_single(task: str, skills_dir: str = "skills") -> None:
     agent = build_agent(skills_dir)
     print(agent.run(task))
 
 
-def run_interactive(skills_dir: str = ".claude/skills") -> None:
+def run_interactive(skills_dir: str = "skills") -> None:
     agent = build_agent(skills_dir)
     history = ConversationHistory(system_prompt=BASE_SYSTEM_PROMPT)
     loaded = agent.skill_registry.list_skills()
@@ -65,7 +65,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="OpenAI 兼容接口 AI Agent")
     parser.add_argument("task", nargs="?", help="单次任务描述")
     parser.add_argument("-i", "--interactive", action="store_true", help="交互模式")
-    parser.add_argument("--skills-dir", default=".claude/skills", help="Skills 目录路径，默认 .claude/skills/")
+    parser.add_argument("--skills-dir", default="skills", help="Skills 目录路径，默认 skills/")
     parser.add_argument("--list-skills", action="store_true", help="列出所有已加载的 Skills")
     args = parser.parse_args()
 
