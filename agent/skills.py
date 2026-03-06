@@ -18,7 +18,6 @@ class Skill:
     content: str          # SKILL.md body (去掉 frontmatter 之后的正文)
     path: str
     version: str = "1.0.0"
-    allowed_tools: List[str] = None  # 该技能允许使用的工具列表
 
 
 class SkillRegistry:
@@ -65,22 +64,12 @@ class SkillRegistry:
         if not name or not description:
             return None
 
-        # 解析 allowed-tools 字段
-        allowed_tools_str = fm.get("allowed-tools", "")
-        allowed_tools = []
-        if allowed_tools_str:
-            # 解析格式：Bash(npx agent-browser:*), Bash(agent-browser:*)
-            import re
-            matches = re.findall(r'(\w+)\(([^)]*)\)', allowed_tools_str)
-            allowed_tools = [f"{m[0]}({m[1]})" for m in matches]
-
         return Skill(
             name=name,
             description=description,
             content=body,
             path=path,
             version=fm.get("version", "1.0.0"),
-            allowed_tools=allowed_tools,
         )
 
     def get_all_skills(self) -> List[Skill]:
@@ -126,5 +115,4 @@ class SkillRegistry:
     def list_skills(self) -> List[Dict]:
         if not self._loaded:
             self.load()
-        return [{"name": s.name, "description": s.description[:80], "path": s.path,
-                 "allowed_tools": s.allowed_tools} for s in self._skills]
+        return [{"name": s.name, "description": s.description[:80], "path": s.path} for s in self._skills]

@@ -3,6 +3,8 @@ import logging
 import os
 import datetime
 from typing import Any, Optional, List
+
+import httpx
 from openai import OpenAI
 from .conversation import ConversationHistory
 from .config import config
@@ -51,15 +53,28 @@ BASE_SYSTEM_PROMPT = """
 """
 
 class AgentLoop:
-    def __init__(self, tools: list[BaseTool], skills_dir: str = "skills"):
+    def __init__(self, tools: list[BaseTool], skill_registry: SkillRegistry):
+        http_client = None
+        if config.openai_no_proxy:
+            http_client = httpx.Client(trust_env=False)
         self.client = OpenAI(
             api_key=config.openai_api_key,
             base_url=config.openai_base_url,
+            http_client=http_client,
         )
         self.tools = {t.name: t for t in tools}
         self.tool_schemas = [t.to_openai_schema() for t in tools]
-        self.skill_registry = SkillRegistry(skills_dir)
-        self.skill_registry.load()
+        self.skill_registry = skill_registry
+
+    def close(self) -> None:
+        """关闭 MCP 连接，释放资源。"""
+        closed = set()
+        for tool in self.tools.values():
+            if hasattr(tool, "_client"):
+                c = tool._client
+                if id(c) not in closed:
+                    closed.add(id(c))
+                    tool.close()
 
     def run(self, user_input: str, history: Optional[ConversationHistory] = None) -> str:
         # 始终注入 Skills 概览，让 Agent 知道有哪些 Skills（回答「你有哪些技能」时能正确列出）

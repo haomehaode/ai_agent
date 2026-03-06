@@ -1,5 +1,6 @@
 # 环境与密钥
 .env
+mcp_servers.json
 .venv/
 venv/
 env/

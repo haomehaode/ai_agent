@@ -16,49 +16,66 @@ from tools.skill_ops import ReadSkillTool
 def build_agent(skills_dir: str = "skills") -> AgentLoop:
     sanitizer = PathSanitizer(config.allowed_path_list)
     cmd_filter = CommandFilter()
-    tools = [
+    skill_registry = SkillRegistry(skills_dir)
+    skill_registry.load()
+    local_tools = [
         ReadFileTool(sanitizer),
         WriteFileTool(sanitizer),
         ListDirTool(sanitizer),
         BashTool(cmd_filter, config.bash_timeout_secs),
         SearchFilesTool(sanitizer),
-        ReadSkillTool(skills_dir),
+        ReadSkillTool(skill_registry),
     ]
-    return AgentLoop(tools, skills_dir=skills_dir)
+
+    mcp_tools = []
+    if config.mcp_enabled:
+        from tools.mcp_loader import load_mcp_tools
+        local_names = {t.name for t in local_tools}
+        mcp_tools = load_mcp_tools(config.mcp_config_path, local_names)
+        if mcp_tools:
+            print(f"[MCP] Loaded {len(mcp_tools)} tool(s): {[t.name for t in mcp_tools]}")
+
+    return AgentLoop(local_tools + mcp_tools, skill_registry=skill_registry)
 
 
 def run_single(task: str, skills_dir: str = "skills") -> None:
     agent = build_agent(skills_dir)
-    print(agent.run(task))
+    try:
+        print(agent.run(task))
+    finally:
+        agent.close()
 
 
 def run_interactive(skills_dir: str = "skills") -> None:
     agent = build_agent(skills_dir)
-    history = ConversationHistory(system_prompt=BASE_SYSTEM_PROMPT)
-    loaded = agent.skill_registry.list_skills()
-    print(f"AI Agent 已启动，已加载 {len(loaded)} 个 Skills（输入 'exit' 退出，'skills' 列出技能，'reset' 重置对话）\n")
-    while True:
-        try:
-            user_input = input("你: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n再见！")
-            break
-        if not user_input:
-            continue
-        if user_input.lower() == "exit":
-            print("再见！")
-            break
-        if user_input.lower() == "reset":
-            history = ConversationHistory(system_prompt=BASE_SYSTEM_PROMPT)
-            print("对话已重置\n")
-            continue
-        if user_input.lower() == "skills":
-            for s in agent.skill_registry.list_skills():
-                print(f"  [{s['name']}] {s['description']}")
-            print()
-            continue
-        response = agent.run(user_input, history)
-        print(f"\nAgent: {response}\n")
+    try:
+        history = ConversationHistory(system_prompt=BASE_SYSTEM_PROMPT)
+        loaded = agent.skill_registry.list_skills()
+        print(f"AI Agent 已启动，已加载 {len(loaded)} 个 Skills（输入 'exit' 退出，'skills' 列出技能，'reset' 重置对话）\n")
+        while True:
+            try:
+                user_input = input("你: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n再见！")
+                break
+            if not user_input:
+                continue
+            if user_input.lower() == "exit":
+                print("再见！")
+                break
+            if user_input.lower() == "reset":
+                history = ConversationHistory(system_prompt=BASE_SYSTEM_PROMPT)
+                print("对话已重置\n")
+                continue
+            if user_input.lower() == "skills":
+                for s in agent.skill_registry.list_skills():
+                    print(f"  [{s['name']}] {s['description']}")
+                print()
+                continue
+            response = agent.run(user_input, history)
+            print(f"\nAgent: {response}\n")
+    finally:
+        agent.close()
 
 
 def main() -> None:

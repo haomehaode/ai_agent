@@ -18,9 +18,8 @@ class ReadSkillTool(BaseTool):
         "required": ["skill_name"],
     }
 
-    def __init__(self, skills_dir: str = "skills"):
-        self._registry = SkillRegistry(skills_dir)
-        self._registry.load()
+    def __init__(self, registry: SkillRegistry):
+        self._registry = registry
 
     def execute(self, skill_name: str) -> ToolResult:
         skill = self._registry.get_skill_by_name(skill_name.strip())

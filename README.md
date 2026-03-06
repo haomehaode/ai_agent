@@ -22,7 +22,9 @@ ai_agent/
 │   ├── file_ops.py        # read_file, write_file, list_dir
 │   ├── bash.py            # bash_exec
 │   ├── code_search.py     # search_files（regex/glob）
-│   └── skill_ops.py        # read_skill
+│   ├── skill_ops.py       # read_skill
+│   ├── mcp_loader.py      # MCP 工具加载（stdio/sse/streamable_http）
+│   └── mcp_client.py      # MCP 客户端
 ├── safety/
 │   └── guardrails.py      # PathSanitizer、CommandFilter
 ├── skills/                # 技能目录（可用 --skills-dir skills 指定）
@@ -31,6 +33,7 @@ ai_agent/
 │   ├── code-review/
 │   └── git-helper/
 ├── logs/                  # 运行日志
+├── mcp_servers.json       # MCP 服务器配置
 ├── main_cli.py            # 入口
 ├── run.sh                 # 快捷启动（交互模式）
 └── requirements.txt
@@ -38,11 +41,15 @@ ai_agent/
 
 ## 安装
 
+**要求**：Python 3.10+（mcp 包要求）。macOS 推荐：`brew install python@3.13`
+
 ```bash
 cd ai_agent
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+./setup.sh   # 自动创建 .venv 并安装依赖
+# 或手动：
+# python3.13 -m venv .venv
+# source .venv/bin/activate
+# pip install -r requirements.txt
 ```
 
 ## 配置
@@ -121,6 +128,18 @@ description: 何时使用此技能（含触发词）
 # 实时查看最新日志
 ls -t logs/agent_*.log | head -1 | xargs tail -f
 ```
+
+## MCP 工具
+
+在 `mcp_servers.json` 中配置 MCP 服务器，支持三种传输（与 [MCP 官方规范](https://modelcontextprotocol.io/specification) 一致）：
+
+| transport | 说明 | 配置示例 |
+|-----------|------|----------|
+| **stdio** | 本地子进程 | `command`, `args`（如 `npx -y @modelcontextprotocol/server-filesystem /tmp`） |
+| **streamable_http** | 远程 HTTP（推荐） | `url`, `headers`（如 Google Stitch） |
+| **sse** | 旧版 HTTP+SSE（兼容） | `url`, `headers` |
+
+未指定 `transport` 时：有 `url` 无 `command` → 自动用 `streamable_http`，否则 → `stdio`。
 
 ## 安全
 
